@@ -31,6 +31,15 @@ When a provider shows as connected, its models become available in chat.
 
 To disconnect, open the provider and choose to remove its sign-in.
 
+#### Fetch models from a custom provider
+
+Instead of typing model ids by hand, use **Fetch models** while adding or editing a custom provider. OpenChamber requests `{baseURL}/models` (the standard OpenAI-compatible model list), shows the results with existing form models already selected, and you pick which to add. Selected models are appended to the list on save — hand-added models are kept.
+
+- Fetching uses the API key you entered in the form. If you leave it blank while editing, OpenChamber falls back to the key saved for that provider in OpenCode auth.
+- Credentials are resolved on the server and never returned to the page.
+- The request times out after 10 seconds and redirects are not followed. Empty model lists are fine; malformed responses and blocked addresses show a clear message instead of failing silently.
+- For safety, requests only go to public `http://`/`https://` addresses. Local and private ranges (loopback, LAN, link-local, cloud metadata) are blocked by default. To allow private endpoints such as a local Ollama server, set `OPENCHAMBER_PROVIDER_DISCOVERY_ALLOW_PRIVATE=1` on the OpenChamber server and restart it.
+
 ## Pick a model
 
 You pick the model where you're working:

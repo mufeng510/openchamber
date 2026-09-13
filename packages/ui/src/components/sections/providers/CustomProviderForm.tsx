@@ -2,6 +2,7 @@ import React from 'react';
 import {
   SettingsSection,
   SettingsStackedField,
+  SettingsCheckboxRow,
   SETTINGS_FIELDS_STACK_CLASS,
   SETTINGS_FIELD_LABEL_CLASS,
   SETTINGS_HELPER_CLASS,
@@ -13,15 +14,24 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Icon } from '@/components/icon/Icon';
 import { useI18n } from '@/lib/i18n';
+import { runtimeFetch } from '@/lib/runtime-fetch';
 import {
+  addDiscoveredModelsToForm,
+  buildModelDiscoveryRequest,
   CUSTOM_PROVIDER_PROTOCOLS,
   createEmptyCustomProviderForm,
   createHeaderRow,
   createModelRow,
+  discoveryErrorI18nKey,
+  discoveryErrorCodeFromPayload,
+  initialDiscoverySelection,
+  isHttpBaseURL,
+  parseDiscoverableModels,
   validateCustomProvider,
   type CustomProviderFormState,
   type CustomProviderPersistPlan,
   type CustomProviderTranslator,
+  type DiscoveredModel,
   type FieldErrors,
   type HeaderFieldErrors,
   type ModelFieldErrors,
@@ -60,6 +70,11 @@ export const CustomProviderForm: React.FC<CustomProviderFormProps> = ({
   const [err, setErr] = React.useState<FieldErrors>({});
   const [modelErrors, setModelErrors] = React.useState<ModelFieldErrors[]>([]);
   const [headerErrors, setHeaderErrors] = React.useState<HeaderFieldErrors[]>([]);
+  const [discoveryBusy, setDiscoveryBusy] = React.useState(false);
+  const [discoveryAttempted, setDiscoveryAttempted] = React.useState(false);
+  const [discoveredModels, setDiscoveredModels] = React.useState<DiscoveredModel[]>([]);
+  const [discoverySelection, setDiscoverySelection] = React.useState<ReadonlySet<string>>(() => new Set());
+  const [discoveryError, setDiscoveryError] = React.useState<string | null>(null);
   const seededEditProviderIdRef = React.useRef<string | null>(null);
 
   React.useEffect(() => {
@@ -76,6 +91,11 @@ export const CustomProviderForm: React.FC<CustomProviderFormProps> = ({
     setErr({});
     setModelErrors([]);
     setHeaderErrors([]);
+    setDiscoveryBusy(false);
+    setDiscoveryAttempted(false);
+    setDiscoveredModels([]);
+    setDiscoverySelection(new Set());
+    setDiscoveryError(null);
   }, [initialValues, isEdit]);
 
   const setField = (key: keyof Pick<CustomProviderFormState, 'providerID' | 'name' | 'baseURL' | 'apiKey'>, value: string) => {
@@ -128,6 +148,79 @@ export const CustomProviderForm: React.FC<CustomProviderFormProps> = ({
       return;
     }
     await onSubmit(output.result);
+  };
+
+  const handleFetchModels = async () => {
+    if (discoveryBusy) {
+      return;
+    }
+    const baseURL = form.baseURL.trim();
+    if (!isHttpBaseURL(baseURL)) {
+      setDiscoveryAttempted(true);
+      setDiscoveryError(t('settings.providers.page.custom.models.discovery.requiresBaseURL'));
+      return;
+    }
+    setDiscoveryBusy(true);
+    setDiscoveryAttempted(true);
+    setDiscoveryError(null);
+    setDiscoveredModels([]);
+    setDiscoverySelection(new Set());
+    try {
+      const response = await runtimeFetch('/api/provider/models/discover', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(
+          buildModelDiscoveryRequest(form, { editingProviderId: isEdit ? form.providerID : undefined }),
+        ),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        const errorKey = discoveryErrorI18nKey(discoveryErrorCodeFromPayload(payload));
+        setDiscoveryError(
+          errorKey
+            // SAFETY: errorKey is a string union produced by discoveryErrorCodeSchema; t() accepts the same key union.
+            ? t(errorKey as Parameters<typeof t>[0])
+            : t('settings.providers.page.custom.models.discovery.error.failed'),
+        );
+        return;
+      }
+      const models = parseDiscoverableModels(payload);
+      setDiscoveredModels(models);
+      setDiscoverySelection(initialDiscoverySelection(form, models));
+    } catch (error) {
+      console.error('Failed to discover provider models:', error);
+      setDiscoveryError(t('settings.providers.page.custom.models.discovery.error.failed'));
+    } finally {
+      setDiscoveryBusy(false);
+    }
+  };
+
+  const toggleDiscovered = (modelId: string, checked: boolean) => {
+    setDiscoverySelection((prev) => {
+      const next = new Set(prev);
+      if (checked) {
+        next.add(modelId);
+      } else {
+        next.delete(modelId);
+      }
+      return next;
+    });
+  };
+
+  const handleAddDiscovered = () => {
+    const nextModels = addDiscoveredModelsToForm(form.models, discoveredModels, discoverySelection);
+    setForm((prev) => ({ ...prev, models: nextModels }));
+    setModelErrors((prev) => [
+      ...prev,
+      // SAFETY: empty record — a freshly added discovered model carries no validation errors yet.
+      ...nextModels.slice(prev.length).map(() => ({} as ModelFieldErrors)),
+    ]);
+    setDiscoveredModels([]);
+    setDiscoverySelection(new Set());
+    setDiscoveryAttempted(false);
   };
 
   return (
@@ -245,6 +338,20 @@ export const CustomProviderForm: React.FC<CustomProviderFormProps> = ({
 
       <SettingsSection
         title={t('settings.providers.page.custom.models.title')}
+        headerAction={(
+          <Button
+            type="button"
+            variant="outline"
+            size="xs"
+            className="!font-normal"
+            onClick={() => void handleFetchModels()}
+            disabled={busy || discoveryBusy}
+          >
+            {discoveryBusy
+              ? t('settings.providers.page.custom.models.discovery.fetching')
+              : t('settings.providers.page.custom.models.discovery.fetch')}
+          </Button>
+        )}
         contentClassName={SETTINGS_FIELDS_STACK_CLASS}
       >
         {form.models.map((model, index) => (
@@ -315,6 +422,81 @@ export const CustomProviderForm: React.FC<CustomProviderFormProps> = ({
         >
           {t('settings.providers.page.custom.models.add')}
         </Button>
+
+        {discoveryAttempted && !discoveryBusy && !discoveryError && discoveredModels.length === 0 ? (
+          <p className="typography-meta text-muted-foreground">
+            {t('settings.providers.page.custom.models.discovery.empty')}
+          </p>
+        ) : null}
+
+        {discoveryError ? (
+          <p className="typography-meta text-[var(--status-error)]" role="status">
+            {discoveryError}
+          </p>
+        ) : null}
+
+        {discoveredModels.length > 0 ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="typography-meta text-muted-foreground">
+                {t('settings.providers.page.custom.models.discovery.selection', {
+                  selected: String(discoverySelection.size),
+                  total: String(discoveredModels.length),
+                })}
+              </span>
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="xs"
+                  className="!font-normal"
+                  onClick={() =>
+                    setDiscoverySelection(new Set(discoveredModels.map((model) => model.id)))
+                  }
+                >
+                  {t('settings.providers.page.custom.models.discovery.selectAll')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="xs"
+                  className="!font-normal"
+                  onClick={() => setDiscoverySelection(new Set())}
+                >
+                  {t('settings.providers.page.custom.models.discovery.clearSelection')}
+                </Button>
+              </div>
+            </div>
+            <div className="max-h-48 overflow-y-auto border-t border-[var(--surface-subtle)]">
+              {discoveredModels.map((model) => (
+                <SettingsCheckboxRow
+                  key={model.id}
+                  checked={discoverySelection.has(model.id)}
+                  onChange={(checked) => toggleDiscovered(model.id, checked)}
+                  label={(
+                    <span className="flex min-w-0 flex-1 items-baseline justify-between gap-2">
+                      <span className="truncate typography-meta font-medium text-foreground">{model.name}</span>
+                      <span className="shrink-0 font-mono typography-micro text-muted-foreground">{model.id}</span>
+                    </span>
+                  )}
+                  ariaLabel={t('settings.providers.page.custom.models.discovery.selectModel', { name: model.name })}
+                />
+              ))}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              className="!font-normal"
+              disabled={discoverySelection.size === 0}
+              onClick={handleAddDiscovered}
+            >
+              {t('settings.providers.page.custom.models.discovery.addSelected', {
+                count: String(discoverySelection.size),
+              })}
+            </Button>
+          </div>
+        ) : null}
       </SettingsSection>
 
       <SettingsSection

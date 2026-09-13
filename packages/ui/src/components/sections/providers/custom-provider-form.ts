@@ -3,6 +3,7 @@
  * Mirrors OpenCode web UI validation and request construction so a provider
  * can be defined from Settings without code changes.
  */
+import { z } from 'zod';
 
 export const CUSTOM_PROVIDER_PROTOCOLS = {
   'openai-chat': '@ai-sdk/openai-compatible',
@@ -133,6 +134,8 @@ export const createEmptyCustomProviderForm = (): CustomProviderFormState => ({
   models: [createModelRow()],
   headers: [createHeaderRow()],
 });
+
+export const isHttpBaseURL = (value: string): boolean => BASE_URL_PATTERN.test(value.trim());
 
 function protocolFromNpm(npm: string | undefined): CustomProviderProtocol {
   switch (npm) {
@@ -356,12 +359,7 @@ export function validateCustomProvider(input: ValidateCustomProviderInput): Vali
   });
 
   const headersValid = headerErrors.every((entry) => !entry.key && !entry.value);
-  const headerConfig = Object.fromEntries(
-    input.form.headers
-      .map((header) => ({ key: header.key.trim(), value: header.value.trim() }))
-      .filter((header) => header.key && header.value)
-      .map((header) => [header.key, header.value]),
-  );
+  const headerConfig = buildHeaderConfig(input.form.headers);
 
   const err: FieldErrors = {
     providerID: idError ?? existsError,
@@ -395,6 +393,15 @@ export function validateCustomProvider(input: ValidateCustomProviderInput): Vali
       },
     },
   };
+}
+
+export function buildHeaderConfig(headers: HeaderRow[]): Record<string, string> {
+  return Object.fromEntries(
+    headers
+      .map((header) => ({ key: header.key.trim(), value: header.value.trim() }))
+      .filter((header) => header.key && header.value)
+      .map((header) => [header.key, header.value]),
+  );
 }
 
 /**
@@ -431,4 +438,168 @@ export function buildProviderUpsertRequest(
     config: plan.config,
     scope: options?.scope ?? 'user',
   };
+}
+
+export type DiscoveredModel = {
+  id: string;
+  name: string;
+};
+
+export type DiscoveryErrorCode =
+  | 'INVALID_URL'
+  | 'URL_BLOCKED'
+  | 'AUTH_FAILED'
+  | 'ACCESS_DENIED'
+  | 'ENDPOINT_NOT_FOUND'
+  | 'RATE_LIMITED'
+  | 'BAD_RESPONSE'
+  | 'PROVIDER_ERROR'
+  | 'REDIRECT'
+  | 'NETWORK_ERROR'
+  | 'TIMEOUT';
+
+export type ModelDiscoveryRequest = {
+  baseURL: string;
+  apiKey?: string;
+  providerId?: string;
+  headers?: Record<string, string>;
+};
+
+/**
+ * Builds the model discovery request body. Credentials only travel to the
+ * OpenChamber discovery route, which resolves them server-side; they are never
+ * returned to the client. In edit mode the provider id is included so a blank
+ * API key can fall back to the stored OpenCode auth.
+ */
+export function buildModelDiscoveryRequest(
+  form: CustomProviderFormState,
+  options?: { editingProviderId?: string },
+): ModelDiscoveryRequest {
+  const headerConfig = buildHeaderConfig(form.headers);
+  const request: ModelDiscoveryRequest = { baseURL: form.baseURL.trim() };
+  const apiKey = form.apiKey.trim();
+  if (apiKey) request.apiKey = apiKey;
+  if (options?.editingProviderId) request.providerId = options.editingProviderId;
+  if (Object.keys(headerConfig).length > 0) request.headers = headerConfig;
+  return request;
+}
+
+const trimmed = z.string().transform((value) => value.trim());
+
+/**
+ * One entry of the standard OpenAI-compatible `{models: [{id, name}]}` list.
+ * Ids must survive, a missing or blank display name falls back to the id.
+ */
+const discoveredModelSchema = z.object({
+  id: trimmed.pipe(z.string().min(1)),
+  name: trimmed.optional(),
+});
+
+const discoverableModelsSchema = z.object({
+  models: z.array(z.unknown()),
+});
+
+/**
+ * Parses the discovery response at the boundary. Unknown entries are skipped
+ * and a missing display name falls back to the model id.
+ */
+export function parseDiscoverableModels(payload: unknown): DiscoveredModel[] {
+  const parsed = discoverableModelsSchema.safeParse(payload);
+  if (!parsed.success) {
+    throw new Error('Invalid model discovery payload');
+  }
+
+  const seen = new Set<string>();
+  const models: DiscoveredModel[] = [];
+  for (const entry of parsed.data.models) {
+    const model = discoveredModelSchema.safeParse(entry);
+    if (!model.success) continue;
+    const { id, name } = model.data;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    models.push({ id, name: name || id });
+  }
+  return models;
+}
+
+const discoveryErrorCodeSchema = z.enum([
+  'INVALID_URL',
+  'URL_BLOCKED',
+  'AUTH_FAILED',
+  'ACCESS_DENIED',
+  'ENDPOINT_NOT_FOUND',
+  'RATE_LIMITED',
+  'BAD_RESPONSE',
+  'PROVIDER_ERROR',
+  'REDIRECT',
+  'NETWORK_ERROR',
+  'TIMEOUT',
+]);
+
+const DISCOVERY_ERROR_I18N_KEYS = {
+  INVALID_URL: 'settings.providers.page.custom.models.discovery.error.invalidURL',
+  URL_BLOCKED: 'settings.providers.page.custom.models.discovery.error.urlBlocked',
+  AUTH_FAILED: 'settings.providers.page.custom.models.discovery.error.authFailed',
+  ACCESS_DENIED: 'settings.providers.page.custom.models.discovery.error.accessDenied',
+  ENDPOINT_NOT_FOUND: 'settings.providers.page.custom.models.discovery.error.endpointNotFound',
+  RATE_LIMITED: 'settings.providers.page.custom.models.discovery.error.rateLimited',
+  BAD_RESPONSE: 'settings.providers.page.custom.models.discovery.error.badResponse',
+  PROVIDER_ERROR: 'settings.providers.page.custom.models.discovery.error.providerError',
+  REDIRECT: 'settings.providers.page.custom.models.discovery.error.redirect',
+  NETWORK_ERROR: 'settings.providers.page.custom.models.discovery.error.network',
+  TIMEOUT: 'settings.providers.page.custom.models.discovery.error.timeout',
+} satisfies Record<DiscoveryErrorCode, string>;
+
+const discoveryErrorBodySchema = z.object({
+  code: discoveryErrorCodeSchema.optional(),
+});
+
+/**
+ * Extracts the discovery error code from the route's error body at the
+ * boundary. Malformed or non-error bodies yield `undefined`.
+ */
+export function discoveryErrorCodeFromPayload(payload: unknown): DiscoveryErrorCode | undefined {
+  const parsed = discoveryErrorBodySchema.safeParse(payload);
+  return parsed.success ? parsed.data.code : undefined;
+}
+
+export function discoveryErrorI18nKey(code: unknown): string | null {
+  const parsed = discoveryErrorCodeSchema.safeParse(code);
+  return parsed.success ? DISCOVERY_ERROR_I18N_KEYS[parsed.data] : null;
+}
+
+/**
+ * Models already present in the form start checked so a fetch and save never
+ * silently drops them again.
+ */
+export function initialDiscoverySelection(
+  form: CustomProviderFormState,
+  discovered: DiscoveredModel[],
+): Set<string> {
+  const existingIds = new Set(form.models.map((model) => model.id.trim()).filter((id) => id.length > 0));
+  return new Set(discovered.map((model) => model.id).filter((id) => existingIds.has(id)));
+}
+
+/**
+ * Appends the selected discovered models to the form rows, skipping ids that
+ * already exist so a discovered model never overwrites hand-edited entries.
+ */
+export function addDiscoveredModelsToForm(
+  current: ModelRow[],
+  discovered: DiscoveredModel[],
+  selectedIds: ReadonlySet<string>,
+): ModelRow[] {
+  const presentIds = new Set(current.map((model) => model.id.trim()).filter((id) => id.length > 0));
+  const added: ModelRow[] = [];
+  for (const model of discovered) {
+    if (!selectedIds.has(model.id) || presentIds.has(model.id)) {
+      continue;
+    }
+    presentIds.add(model.id);
+    added.push({ row: nextRow(), id: model.id, name: model.name });
+  }
+  if (added.length === 0) {
+    return current;
+  }
+  return [...current, ...added];
 }

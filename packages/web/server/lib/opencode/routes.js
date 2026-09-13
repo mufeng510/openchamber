@@ -8,6 +8,7 @@ import {
 import { getClaudeCliAuthStatus } from './claude-cli-auth.js';
 import { OPENCODE_CONFIG_DIR } from './shared.js';
 import { settingsSurfaceOf } from './settings-files.js';
+import { discoveryErrorStatus } from './provider-models-discovery.js';
 
 export const registerOpenCodeRoutes = (app, dependencies) => {
   const {
@@ -24,6 +25,7 @@ export const registerOpenCodeRoutes = (app, dependencies) => {
     getProviderSources,
     removeProviderConfig,
     upsertProviderConfig,
+    discoverProviderModels,
     refreshOpenCodeAfterConfigChange,
     buildOpenCodeUrl,
     getOpenCodeAuthHeaders,
@@ -630,6 +632,41 @@ ${desktopReturn ? `<a class="return" href="openchamber://focus/mcp-auth">Return 
     } catch (error) {
       console.error('Failed to get provider sources:', error);
       return res.status(500).json({ error: error.message || 'Failed to get provider sources' });
+    }
+  });
+
+  // Fetches `{baseURL}/models` for the add/edit custom provider form. The
+  // request runs server-side so the browser never reaches an arbitrary origin,
+  // and the target host is checked against the discovery host policy.
+  app.post('/api/provider/models/discover', async (req, res) => {
+    const baseURL = typeof req.body?.baseURL === 'string' ? req.body.baseURL.trim() : '';
+    if (!baseURL) {
+      return res.status(400).json({ error: 'Base URL is required', code: 'INVALID_URL' });
+    }
+
+    const apiKey = typeof req.body?.apiKey === 'string' ? req.body.apiKey : undefined;
+    const providerId = typeof req.body?.providerId === 'string' ? req.body.providerId.trim() : '';
+    const rawHeaders = req.body?.headers;
+    const headers = rawHeaders && typeof rawHeaders === 'object' && !Array.isArray(rawHeaders)
+      ? rawHeaders
+      : undefined;
+
+    try {
+      const models = await discoverProviderModels({
+        baseURL,
+        apiKey,
+        providerId: providerId || undefined,
+        headers,
+      });
+      return res.json({ models });
+    } catch (error) {
+      const code = typeof error?.code === 'string' ? error.code : null;
+      const status = code ? discoveryErrorStatus(code) : 500;
+      console.error('Failed to discover provider models:', error?.message || error);
+      return res.status(status).json({
+        error: error?.message || 'Failed to discover provider models',
+        ...(code ? { code } : {}),
+      });
     }
   });
 

@@ -1,9 +1,15 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  addDiscoveredModelsToForm,
   buildAuthSetRequest,
+  buildModelDiscoveryRequest,
   buildProviderUpsertRequest,
+  discoveryErrorCodeFromPayload,
+  discoveryErrorI18nKey,
+  initialDiscoverySelection,
   isConfigDefinedCustomProvider,
   isCustomOpenAICompatibleProvider,
+  parseDiscoverableModels,
   providerToCustomFormState,
   resolveProviderConfigScope,
   validateCustomProvider,
@@ -368,5 +374,135 @@ describe('provider edit helpers', () => {
       project: { exists: false },
       custom: { exists: true },
     })).toBe('custom');
+  });
+});
+
+describe('model discovery helpers', () => {
+  test('buildModelDiscoveryRequest trims and includes optional credentials', () => {
+    expect(buildModelDiscoveryRequest(baseForm(), { editingProviderId: 'custom-provider' })).toEqual({
+      baseURL: 'https://api.example.com/v1',
+      apiKey: 'sk-test',
+      providerId: 'custom-provider',
+    });
+
+    expect(buildModelDiscoveryRequest(baseForm({ apiKey: '   ' }))).toEqual({
+      baseURL: 'https://api.example.com/v1',
+    });
+
+    expect(buildModelDiscoveryRequest(baseForm({
+      baseURL: ' https://api.example.com/v1 ',
+      apiKey: '   ',
+      headers: [{ row: 'h0', key: '', value: '' }],
+    }))).toEqual({
+      baseURL: 'https://api.example.com/v1',
+    });
+  });
+
+  test('buildModelDiscoveryRequest carries configured headers', () => {
+    expect(buildModelDiscoveryRequest(baseForm({
+      headers: [{ row: 'h0', key: 'X-Campus', value: '1' }],
+    }))).toEqual({
+      baseURL: 'https://api.example.com/v1',
+      apiKey: 'sk-test',
+      headers: { 'X-Campus': '1' },
+    });
+  });
+
+  test('parseDiscoverableModels normalizes the response list', () => {
+    expect(parseDiscoverableModels({
+      models: [
+        { id: 'model-a', name: 'Model A' },
+        { id: 'model-b' },
+        { id: ' model-a ' },
+      ],
+    })).toEqual([
+      { id: 'model-a', name: 'Model A' },
+      { id: 'model-b', name: 'model-b' },
+    ]);
+  });
+
+  test('parseDiscoverableModels skips unknown entries and rejects bad payloads', () => {
+    expect(parseDiscoverableModels({ models: [42, null, { name: 'No id' }, { id: '' }] })).toEqual([]);
+    expect(() => parseDiscoverableModels(null)).toThrow('Invalid model discovery payload');
+    expect(() => parseDiscoverableModels({ wrongKey: [] })).toThrow('Invalid model discovery payload');
+  });
+
+  test('preserves model ids with slashes, colons, dots, and dashes', () => {
+    const discovered = parseDiscoverableModels({
+      models: [
+        { id: 'moonshotai/kimi-k3', name: 'Kimi K3' },
+        { id: 'model:v2' },
+        { id: 'foo.bar' },
+        { id: 'foo-bar' },
+      ],
+    });
+    expect(discovered.map((model) => model.id)).toEqual([
+      'moonshotai/kimi-k3',
+      'model:v2',
+      'foo.bar',
+      'foo-bar',
+    ]);
+
+    const next = addDiscoveredModelsToForm([], discovered, new Set(discovered.map((model) => model.id)));
+    expect(next.map((model) => ({ id: model.id, name: model.name }))).toEqual([
+      { id: 'moonshotai/kimi-k3', name: 'Kimi K3' },
+      { id: 'model:v2', name: 'model:v2' },
+      { id: 'foo.bar', name: 'foo.bar' },
+      { id: 'foo-bar', name: 'foo-bar' },
+    ]);
+  });
+
+  test('discoveryErrorI18nKey maps error codes to message keys', () => {
+    expect(discoveryErrorI18nKey('URL_BLOCKED')).toBe(
+      'settings.providers.page.custom.models.discovery.error.urlBlocked',
+    );
+    expect(discoveryErrorI18nKey('TIMEOUT')).toBe(
+      'settings.providers.page.custom.models.discovery.error.timeout',
+    );
+    expect(discoveryErrorI18nKey('MADE_UP')).toBeNull();
+    expect(discoveryErrorI18nKey(undefined)).toBeNull();
+    expect(discoveryErrorI18nKey(42)).toBeNull();
+  });
+
+  test('discoveryErrorCodeFromPayload reads the route error body at the boundary', () => {
+    expect(discoveryErrorCodeFromPayload({ error: 'nope', code: 'TIMEOUT' })).toBe('TIMEOUT');
+    expect(discoveryErrorCodeFromPayload({ code: 'NOT_A_CODE' })).toBeUndefined();
+    expect(discoveryErrorCodeFromPayload({ models: [] })).toBeUndefined();
+    expect(discoveryErrorCodeFromPayload(null)).toBeUndefined();
+    expect(discoveryErrorCodeFromPayload('boom')).toBeUndefined();
+  });
+
+  test('initialDiscoverySelection pre-checks models already in the form', () => {
+    const form = baseForm({
+      models: [
+        { row: 'm0', id: 'model-a', name: 'Model A' },
+        { row: 'm1', id: 'local-model', name: 'Local' },
+      ],
+    });
+    const discovered = [
+      { id: 'model-a', name: 'Model A' },
+      { id: 'new-model', name: 'New' },
+    ];
+
+    expect([...initialDiscoverySelection(form, discovered)].sort()).toEqual(['model-a']);
+    expect([...initialDiscoverySelection(baseForm({ models: [] }), discovered)]).toEqual([]);
+  });
+
+  test('addDiscoveredModelsToForm appends selected models and skips duplicates', () => {
+    const current = [{ row: 'm0', id: 'model-a', name: 'Model A' }];
+    const discovered = [
+      { id: 'model-a', name: 'Model A' },
+      { id: 'model-b', name: 'Model B' },
+      { id: 'model-c', name: 'Model C' },
+    ];
+
+    const next = addDiscoveredModelsToForm(current, discovered, new Set(['model-b', 'model-c']));
+    expect(next.length).toBe(3);
+    expect(next.map((model) => model.id)).toEqual(['model-a', 'model-b', 'model-c']);
+    expect(next[1]?.name).toBe('Model B');
+    expect(next[2]?.name).toBe('Model C');
+
+    expect(addDiscoveredModelsToForm(current, discovered, new Set(['model-a']))).toBe(current);
+    expect(addDiscoveredModelsToForm(current, discovered, new Set())).toBe(current);
   });
 });
