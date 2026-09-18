@@ -46,8 +46,8 @@ type CustomProviderFormProps = {
 };
 
 const DISCOVERY_ERROR_MESSAGES: Record<DiscoverModelsErrorCode, string> = {
-  INVALID_URL: 'settings.providers.page.custom.models.discoveryError.unknown',
-  SSRF_BLOCKED: 'settings.providers.page.custom.models.discoveryError.unknown',
+  INVALID_URL: 'settings.providers.page.custom.models.discoveryError.invalidUrl',
+  SSRF_BLOCKED: 'settings.providers.page.custom.models.discoveryError.ssrfBlocked',
   AUTH_FAILED: 'settings.providers.page.custom.models.discoveryError.authFailed',
   ACCESS_DENIED: 'settings.providers.page.custom.models.discoveryError.accessDenied',
   ENDPOINT_NOT_FOUND: 'settings.providers.page.custom.models.discoveryError.endpointNotFound',

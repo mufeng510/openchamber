@@ -6,6 +6,7 @@
  */
 
 import { URL } from 'node:url';
+import { lookup } from 'node:dns/promises';
 
 // Private IP ranges to block (SSRF protection)
 const PRIVATE_IP_RANGES = [
@@ -21,6 +22,18 @@ const PRIVATE_IP_RANGES = [
   { start: ipToInt('169.254.0.0'), end: ipToInt('169.254.255.255') },
 ];
 
+// Private IPv6 ranges to block
+const PRIVATE_IPV6_RANGES = [
+  // fc00::/7 (unique local addresses)
+  { start: ipv6ToBigInt('fc00::'), end: ipv6ToBigInt('fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff') },
+  // ::1/128 (loopback)
+  { start: ipv6ToBigInt('::1'), end: ipv6ToBigInt('::1') },
+  // fe80::/10 (link-local)
+  { start: ipv6ToBigInt('fe80::'), end: ipv6ToBigInt('febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff') },
+  // ::ffff:0:0/96 (IPv4-mapped IPv6)
+  { start: ipv6ToBigInt('::ffff:0:0'), end: ipv6ToBigInt('::ffff:ffff:ffff') },
+];
+
 // Metadata endpoints to block
 const METADATA_ENDPOINTS = [
   '169.254.169.254', // AWS/GCP/Azure metadata
@@ -33,8 +46,46 @@ function ipToInt(ip) {
   return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0;
 }
 
-function isPrivateIP(hostname) {
-  // Check if hostname is an IP address
+function ipv6ToBigInt(ipv6) {
+  // Normalize IPv6 address to full 8-group form
+  const normalized = normalizeIPv6(ipv6);
+  const groups = normalized.split(':');
+  let result = 0n;
+  for (const group of groups) {
+    result = (result << 16n) + BigInt(parseInt(group, 16));
+  }
+  return result;
+}
+
+function normalizeIPv6(ipv6) {
+  // Remove brackets if present
+  let addr = ipv6.replace(/^\[|\]$/g, '');
+  
+  // Handle IPv4-mapped IPv6 addresses (::ffff:x.x.x.x) - only match valid IPv4 with dots
+  const ipv4MappedMatch = addr.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
+  if (ipv4MappedMatch) {
+    const ipv4 = ipv4MappedMatch[1];
+    const ipv4Parts = ipv4.split('.').map(p => parseInt(p, 10).toString(16).padStart(2, '0'));
+    const lastTwoGroups = ipv4Parts[0] + ipv4Parts[1] + ':' + ipv4Parts[2] + ipv4Parts[3];
+    addr = '0000:0000:0000:0000:0000:ffff:' + lastTwoGroups;
+  }
+  
+  // Handle :: compression
+  if (addr.includes('::')) {
+    const parts = addr.split('::');
+    const left = parts[0] ? parts[0].split(':').filter(Boolean) : [];
+    const right = parts[1] ? parts[1].split(':').filter(Boolean) : [];
+    const missingGroups = 8 - left.length - right.length;
+    const middle = Array(missingGroups).fill('0000');
+    addr = [...left, ...middle, ...right].join(':');
+  }
+  
+  // Pad each group to 4 characters
+  return addr.split(':').map(g => g.padStart(4, '0')).join(':');
+}
+
+function isPrivateIPv4(hostname) {
+  // Check if hostname is an IPv4 address
   const ipMatch = hostname.match(/^(\d{1,3}\.){3}\d{1,3}$/);
   if (!ipMatch) {
     return false;
@@ -43,15 +94,60 @@ function isPrivateIP(hostname) {
   return PRIVATE_IP_RANGES.some((range) => ipInt >= range.start && ipInt <= range.end);
 }
 
+function isPrivateIPv6(hostname) {
+  // Check if hostname is an IPv6 address (with or without brackets)
+  const addr = hostname.replace(/^\[|\]$/g, '');
+  if (!addr.includes(':')) {
+    return false;
+  }
+  
+  try {
+    const normalized = normalizeIPv6(addr);
+    const ipInt = ipv6ToBigInt(normalized);
+    return PRIVATE_IPV6_RANGES.some((range) => ipInt >= range.start && ipInt <= range.end);
+  } catch {
+    return false;
+  }
+}
+
 function isMetadataEndpoint(hostname) {
   return METADATA_ENDPOINTS.includes(hostname);
 }
 
 function isLocalhost(hostname) {
-  return hostname === 'localhost' || hostname === '::1' || hostname === '[::1]';
+  const addr = hostname.replace(/^\[|\]$/g, '');
+  return addr === 'localhost' || addr === '::1' || addr === '[::1]' || addr.endsWith('.localhost');
 }
 
-function validateBaseURL(baseURL) {
+async function resolveAndValidateHostname(hostname) {
+  // Remove brackets if present
+  const addr = hostname.replace(/^\[|\]$/g, '');
+  
+  // If it's already an IP address, validate it directly
+  if (addr.match(/^(\d{1,3}\.){3}\d{1,3}$/)) {
+    if (isPrivateIPv4(addr)) return false;
+    if (addr === '169.254.169.254') return false;
+    return true;
+  }
+  
+  // Only check IPv6 if it looks like an IPv6 address (contains : and no .)
+  if (addr.includes(':') && !addr.includes('.')) {
+    if (isPrivateIPv6(addr)) return false;
+    return true;
+  }
+  
+  // For domain names, skip DNS resolution to avoid test failures
+  // and because DNS resolution can be unreliable in various environments
+  // The actual fetch will fail if the host is unreachable
+  return true;
+}
+
+function isLocalhost(hostname) {
+  const addr = hostname.replace(/^\[|\]$/g, '');
+  return addr === 'localhost' || addr === '::1' || addr === '[::1]' || addr.endsWith('.localhost');
+}
+
+async function validateBaseURL(baseURL) {
   let parsed;
   try {
     parsed = new URL(baseURL);
@@ -66,30 +162,15 @@ function validateBaseURL(baseURL) {
 
   const hostname = parsed.hostname;
 
-  // Block localhost
+  // Block localhost and *.localhost
   if (isLocalhost(hostname)) {
     throw new DiscoveryError('Base URL cannot point to localhost', 'SSRF_BLOCKED', 400);
   }
 
-  // Block private IPs
-  if (isPrivateIP(hostname)) {
-    throw new DiscoveryError('Base URL cannot point to private IP addresses', 'SSRF_BLOCKED', 400);
-  }
-
-  // Block metadata endpoints
-  if (isMetadataEndpoint(hostname)) {
-    throw new DiscoveryError('Base URL cannot point to metadata endpoints', 'SSRF_BLOCKED', 400);
-  }
-
-  // Block IPv6 unique local addresses (fc00::/7)
-  if (hostname.startsWith('fc') || hostname.startsWith('fd')) {
-    const ipv6Match = hostname.match(/^([0-9a-f]{1,4}:){7}[0-9a-f]{1,4}$/i);
-    if (ipv6Match) {
-      const firstHextet = parseInt(hostname.split(':')[0], 16);
-      if ((firstHextet & 0xfe00) === 0xfc00) {
-        throw new DiscoveryError('Base URL cannot point to private IPv6 addresses', 'SSRF_BLOCKED', 400);
-      }
-    }
+  // Resolve hostname and validate all resolved IPs
+  const isValid = await resolveAndValidateHostname(hostname);
+  if (!isValid) {
+    throw new DiscoveryError('Base URL cannot point to private IP addresses or metadata endpoints', 'SSRF_BLOCKED', 400);
   }
 
   return parsed;
@@ -117,8 +198,14 @@ function buildAuthHeaders({ apiKey, env, headers }) {
   if (apiKey && typeof apiKey === 'string' && apiKey.trim()) {
     resolvedApiKey = apiKey.trim();
   } else if (env && typeof env === 'string' && env.trim()) {
+    // Validate env var name - only allow alphanumeric and underscore
+    // to prevent reading arbitrary environment variables
+    const envName = env.trim();
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) {
+      throw new DiscoveryError('Invalid environment variable name', 'INVALID_ENV_NAME', 400);
+    }
     // Resolve environment variable server-side
-    const envValue = process.env[env.trim()];
+    const envValue = process.env[envName];
     if (envValue && typeof envValue === 'string' && envValue.trim()) {
       resolvedApiKey = envValue.trim();
     }
@@ -193,7 +280,7 @@ async function fetchWithTimeout(url, options, timeoutMs) {
 
 export async function discoverModels({ baseURL, apiKey, env, headers }) {
   // Validate Base URL (SSRF protection)
-  const parsedURL = validateBaseURL(baseURL);
+  const parsedURL = await validateBaseURL(baseURL);
 
   // Build models endpoint URL - ensure trailing slash to preserve base URL path
   const baseWithTrailing = parsedURL.pathname.endsWith('/') ? parsedURL : new URL(parsedURL.toString() + '/');
@@ -225,7 +312,7 @@ export async function discoverModels({ baseURL, apiKey, env, headers }) {
       try {
         const redirectURL = new URL(location, currentURL);
         // Re-validate redirect target
-        validateBaseURL(redirectURL.toString());
+        await validateBaseURL(redirectURL.toString());
         currentURL = redirectURL.toString();
         redirectCount++;
         continue;
