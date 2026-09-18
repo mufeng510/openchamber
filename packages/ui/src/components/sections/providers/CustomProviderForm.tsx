@@ -22,6 +22,7 @@ import {
   createHeaderRow,
   createModelRow,
   validateCustomProvider,
+  mergeDiscoveredModels,
   type CustomProviderFormState,
   type CustomProviderPersistPlan,
   type CustomProviderTranslator,
@@ -56,6 +57,7 @@ const DISCOVERY_ERROR_MESSAGES: Record<DiscoverModelsErrorCode, string> = {
   INVALID_RESPONSE: 'settings.providers.page.custom.models.discoveryError.invalidResponse',
   PROVIDER_ERROR: 'settings.providers.page.custom.models.discoveryError.providerError',
   INTERNAL_ERROR: 'settings.providers.page.custom.models.discoveryError.unknown',
+  INVALID_ENV_NAME: 'settings.providers.page.custom.models.discoveryError.invalidEnvName',
 };
 
 export const CustomProviderForm: React.FC<CustomProviderFormProps> = ({
@@ -173,8 +175,9 @@ export const CustomProviderForm: React.FC<CustomProviderFormProps> = ({
         let messageKey = DISCOVERY_ERROR_MESSAGES[code] || DISCOVERY_ERROR_MESSAGES.INTERNAL_ERROR;
         let message = t(messageKey);
 
-        if (code === 'ENDPOINT_NOT_FOUND' && data?.error) {
-          message = data.error;
+        if (code === 'ENDPOINT_NOT_FOUND') {
+          // Use localized message with the URL parameter
+          message = t(messageKey, { url: baseURL });
         } else if (code === 'PROVIDER_ERROR' && data?.error) {
           message = t(messageKey, { message: data.error });
         }
@@ -219,34 +222,19 @@ export const CustomProviderForm: React.FC<CustomProviderFormProps> = ({
   };
 
   const handleAddSelectedModels = () => {
-    const selectedModels = discoveredModels.filter((m) => m.selected);
-    const existingIds = new Set(form.models.map((m) => m.id.trim()).filter(Boolean));
+    const { newRows, newModelErrors } = mergeDiscoveredModels(form.models, discoveredModels);
 
-    const newModels = selectedModels
-      .filter((m) => !existingIds.has(m.id))
-      .map((m) => createModelRow().row);
-
-    if (newModels.length === 0 && selectedModels.every((m) => existingIds.has(m.id))) {
+    if (newRows.length === 0) {
       setShowModelSelector(false);
       return;
     }
 
-    setForm((prev) => {
-      const newRows = selectedModels
-        .filter((m) => !existingIds.has(m.id))
-        .map((m) => ({
-          row: createModelRow().row,
-          id: m.id,
-          name: m.name,
-        }));
+    setForm((prev) => ({
+      ...prev,
+      models: [...prev.models, ...newRows],
+    }));
 
-      return {
-        ...prev,
-        models: [...prev.models, ...newRows],
-      };
-    });
-
-    setModelErrors((prev) => [...prev, ...new Array(newModels.length).fill({})]);
+    setModelErrors((prev) => [...prev, ...newModelErrors]);
     setShowModelSelector(false);
   };
 
@@ -642,7 +630,7 @@ export const CustomProviderForm: React.FC<CustomProviderFormProps> = ({
                       </div>
                       {model.alreadyExists && (
                         <span className="typography-micro text-muted-foreground flex-shrink-0">
-                          {t('settings.providers.page.custom.models.nameLabel')} {t('settings.providers.page.custom.models.existingBadge')}
+                          {t('settings.providers.page.custom.models.existingBadge')}
                         </span>
                       )}
                     </label>

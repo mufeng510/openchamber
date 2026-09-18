@@ -102,7 +102,8 @@ export type DiscoverModelsErrorCode =
   | 'TIMEOUT'
   | 'INVALID_RESPONSE'
   | 'PROVIDER_ERROR'
-  | 'INTERNAL_ERROR';
+  | 'INTERNAL_ERROR'
+  | 'INVALID_ENV_NAME';
 
 export type CustomProviderConfig = {
   npm: CustomProviderNpm;
@@ -457,11 +458,6 @@ export function buildAuthSetRequest(plan: CustomProviderPersistPlan): {
   };
 }
 
-/**
- * Builds the OpenChamber provider upsert request body (config persistence).
- * `scope` selects the OpenCode config layer (user/project/custom). Create
- * defaults to user; edit must pass the provider's effective existing layer.
- */
 export function buildProviderUpsertRequest(
   plan: CustomProviderPersistPlan,
   options?: { scope?: ProviderConfigScope },
@@ -475,4 +471,41 @@ export function buildProviderUpsertRequest(
     config: plan.config,
     scope: options?.scope ?? 'user',
   };
+}
+
+/**
+ * Merges selected discovered models into existing form models.
+ * Preserves existing models and only adds newly selected models that don't already exist.
+ * Returns the new model rows to be added and the updated model errors array.
+ */
+export function mergeDiscoveredModels(
+  formModels: ModelRow[],
+  discoveredModels: DiscoveredModel[],
+): { newRows: ModelRow[]; newModelErrors: ModelFieldErrors[] } {
+  const existingIds = new Set(formModels.map((m) => m.id.trim()).filter(Boolean));
+  const selectedModels = discoveredModels.filter((m) => m.selected);
+
+  const newModels = selectedModels
+    .filter((m) => !existingIds.has(m.id))
+    .map((m) => ({
+      row: `row-${Math.random().toString(36).slice(2)}`,
+      id: m.id,
+      name: m.name,
+    }));
+
+  if (newModels.length === 0 && selectedModels.every((m) => existingIds.has(m.id))) {
+    return { newRows: [], newModelErrors: [] };
+  }
+
+  const newRows = selectedModels
+    .filter((m) => !existingIds.has(m.id))
+    .map((m) => ({
+      row: `row-${Math.random().toString(36).slice(2)}`,
+      id: m.id,
+      name: m.name,
+    }));
+
+  const newModelErrors = newModels.map(() => ({}));
+
+  return { newRows, newModelErrors };
 }

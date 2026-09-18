@@ -122,24 +122,49 @@ function isLocalhost(hostname) {
 async function resolveAndValidateHostname(hostname) {
   // Remove brackets if present
   const addr = hostname.replace(/^\[|\]$/g, '');
-  
-  // If it's already an IP address, validate it directly
+
+  // If it's already an IPv4 address, validate it directly
   if (addr.match(/^(\d{1,3}\.){3}\d{1,3}$/)) {
     if (isPrivateIPv4(addr)) return false;
     if (addr === '169.254.169.254') return false;
     return true;
   }
-  
+
   // Only check IPv6 if it looks like an IPv6 address (contains : and no .)
   if (addr.includes(':') && !addr.includes('.')) {
     if (isPrivateIPv6(addr)) return false;
     return true;
   }
-  
-  // For domain names, skip DNS resolution to avoid test failures
-  // and because DNS resolution can be unreliable in various environments
-  // The actual fetch will fail if the host is unreachable
-  return true;
+
+  // For domain names, resolve and validate all resolved IPs
+  try {
+    const { promises: dns } = await import('node:dns');
+    const result = await dns.lookup(addr, { all: true });
+
+    for (const entry of result) {
+      const ip = entry.address;
+
+      // Check IPv4
+      if (ip.includes('.') && !ip.includes(':')) {
+        if (isPrivateIPv4(ip)) return false;
+        if (ip === '169.254.169.254') return false;
+        // Block 0.0.0.0/8
+        if (ip.startsWith('0.')) return false;
+      }
+      // Check IPv6
+      else if (ip.includes(':')) {
+        if (isPrivateIPv6(ip)) return false;
+        // Block ::/128 (loopback) and ::/8 (unspecified)
+        if (ip === '::1' || ip === '::') return false;
+      }
+    }
+
+    return true;
+  } catch {
+    // If DNS resolution fails, allow the request to proceed
+    // The actual fetch will fail if the host is unreachable
+    return true;
+  }
 }
 
 function isLocalhost(hostname) {

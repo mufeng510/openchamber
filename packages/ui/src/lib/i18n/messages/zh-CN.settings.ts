@@ -1544,6 +1544,8 @@ export const settingsDict = {
   'settings.providers.page.custom.models.discoveryError.providerError': '提供商返回错误: {message}',
   'settings.providers.page.custom.models.discoveryError.unknown': '无法发现模型。请重试。',
 
+  'settings.providers.page.custom.models.discoveryError.invalidEnvName': '无效的环境变量名。',
+
   'settings.providers.page.custom.models.discoveryError.invalidUrl': 'Base URL 必须使用 HTTPS。',
   'settings.providers.page.custom.models.discoveryError.ssrfBlocked': 'Base URL 不能指向本地或私有地址。',
   'settings.providers.page.custom.models.existingBadge': '(现有)',

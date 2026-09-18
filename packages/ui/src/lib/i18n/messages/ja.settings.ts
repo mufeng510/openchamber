@@ -1577,6 +1577,8 @@ export const settingsDict = {
   'settings.providers.page.custom.models.discoveryError.providerError': 'プロバイダーがエラーを返しました: {message}',
   'settings.providers.page.custom.models.discoveryError.unknown': 'モデルの検出に失敗しました。再試行してください。',
 
+  'settings.providers.page.custom.models.discoveryError.invalidEnvName': '無効な環境変数名です。',
+
   'settings.providers.page.custom.models.discoveryError.invalidUrl': 'ベースURLはHTTPSを使用する必要があります。',
   'settings.providers.page.custom.models.discoveryError.ssrfBlocked': 'ベースURLをローカルまたはプライベートアドレスに設定することはできません。',
   'settings.providers.page.custom.models.existingBadge': '(既存)',

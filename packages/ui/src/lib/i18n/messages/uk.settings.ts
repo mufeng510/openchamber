@@ -1544,6 +1544,8 @@ export const settingsDict = {
   'settings.providers.page.custom.models.discoveryError.providerError': 'Провайдер повернув помилку: {message}',
   'settings.providers.page.custom.models.discoveryError.unknown': 'Не вдалося виявити моделі. Спробуйте ще раз.',
 
+  'settings.providers.page.custom.models.discoveryError.invalidEnvName': 'Некоректна назва змінної середовища.',
+
   'settings.providers.page.custom.models.discoveryError.invalidUrl': 'Base URL має використовувати HTTPS.',
   'settings.providers.page.custom.models.discoveryError.ssrfBlocked': 'Base URL не може вказувати на локальні або приватні адреси.',
   'settings.providers.page.custom.models.existingBadge': '(існуючий)',

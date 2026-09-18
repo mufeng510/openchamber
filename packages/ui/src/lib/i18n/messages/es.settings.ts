@@ -1544,6 +1544,8 @@ export const settingsDict = {
   'settings.providers.page.custom.models.discoveryError.providerError': 'El proveedor devolvió un error: {message}',
   'settings.providers.page.custom.models.discoveryError.unknown': 'No se pudieron descubrir modelos. Intenta de nuevo.',
 
+  'settings.providers.page.custom.models.discoveryError.invalidEnvName': 'Nombre de variable de entorno inválido.',
+
   'settings.providers.page.custom.models.discoveryError.invalidUrl': 'La URL base debe usar HTTPS.',
   'settings.providers.page.custom.models.discoveryError.ssrfBlocked': 'La URL base no puede apuntar a direcciones locales o privadas.',
   'settings.providers.page.custom.models.existingBadge': '(existente)',

@@ -1497,6 +1497,8 @@ export const settingsDict = {
   'settings.providers.page.custom.models.discoveryError.providerError': 'Sağlayıcı bir hata döndürdü: {message}',
   'settings.providers.page.custom.models.discoveryError.unknown': 'Modeller keşfedilemedi. Lütfen tekrar deneyin.',
 
+  'settings.providers.page.custom.models.discoveryError.invalidEnvName': 'Geçersiz ortam değişkeni adı.',
+
   'settings.providers.page.custom.models.discoveryError.invalidUrl': 'Temel URL HTTPS kullanmalıdır.',
   'settings.providers.page.custom.models.discoveryError.ssrfBlocked': 'Temel URL yerel veya özel adreslere işaret edemez.',
   'settings.providers.page.custom.models.existingBadge': '(mevcut)',

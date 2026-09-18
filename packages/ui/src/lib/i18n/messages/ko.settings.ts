@@ -1544,6 +1544,8 @@ export const settingsDict = {
   'settings.providers.page.custom.models.discoveryError.providerError': '공급자가 오류를 반환함: {message}',
   'settings.providers.page.custom.models.discoveryError.unknown': '모델을 검색하지 못했습니다. 다시 시도해 주세요.',
 
+  'settings.providers.page.custom.models.discoveryError.invalidEnvName': '잘못된 환경 변수 이름입니다.',
+
   'settings.providers.page.custom.models.discoveryError.invalidUrl': '기본 URL은 HTTPS를 사용해야 합니다.',
   'settings.providers.page.custom.models.discoveryError.ssrfBlocked': '기본 URL은 로컬 또는 사설 주소를 가리킬 수 없습니다.',
   'settings.providers.page.custom.models.existingBadge': '(기존)',

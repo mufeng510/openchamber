@@ -1599,6 +1599,8 @@ export const settingsDict = {
   'settings.providers.page.custom.models.discoveryError.providerError': 'Dostawca zwrócił błąd: {message}',
   'settings.providers.page.custom.models.discoveryError.unknown': 'Nie udało się odkryć modeli. Spróbuj ponownie.',
 
+  'settings.providers.page.custom.models.discoveryError.invalidEnvName': 'Nieprawidłowa nazwa zmiennej środowiskowej.',
+
   'settings.providers.page.custom.models.discoveryError.invalidUrl': 'Adres bazowy musi używać HTTPS.',
   'settings.providers.page.custom.models.discoveryError.ssrfBlocked': 'Adres bazowy nie może wskazywać na adresy lokalne ani prywatne.',
   'settings.providers.page.custom.models.existingBadge': '(istniejący)',

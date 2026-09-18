@@ -1451,6 +1451,8 @@ export const settingsDict = {
   'settings.providers.page.custom.models.discoveryError.providerError': '供應商回傳錯誤：{message}',
   'settings.providers.page.custom.models.discoveryError.unknown': '無法探索模型。請重試。',
 
+  'settings.providers.page.custom.models.discoveryError.invalidEnvName': '無效的環境變數名稱。',
+
   'settings.providers.page.custom.models.discoveryError.invalidUrl': 'Base URL 必須使用 HTTPS。',
   'settings.providers.page.custom.models.discoveryError.ssrfBlocked': 'Base URL 不能指向本地或私有位址。',
   'settings.providers.page.custom.models.existingBadge': '(現有)',
