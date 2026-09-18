@@ -140,13 +140,11 @@ describe('model-discovery', () => {
 
       mockFetch({ error: 'Unauthorized' }, 401);
 
-      try {
-        await discoverModels({ baseURL: 'https://api.example.com/v1', apiKey: 'sk-invalid' });
-      } catch (error) {
-        expect(error.code).toBe('AUTH_FAILED');
-        expect(error.statusCode).toBe(401);
-        expect(error.message).toBe('Authentication failed. Please check your API key.');
-      }
+      await expect(discoverModels({ baseURL: 'https://api.example.com/v1', apiKey: 'sk-invalid' })).rejects.toMatchObject({
+        code: 'AUTH_FAILED',
+        statusCode: 401,
+        message: 'Authentication failed. Please check your API key.',
+      });
     });
 
     it('throws ACCESS_DENIED on 403', async () => {
@@ -154,12 +152,10 @@ describe('model-discovery', () => {
 
       mockFetch({ error: 'Forbidden' }, 403);
 
-      try {
-        await discoverModels({ baseURL: 'https://api.example.com/v1', apiKey: 'sk-test' });
-      } catch (error) {
-        expect(error.code).toBe('ACCESS_DENIED');
-        expect(error.statusCode).toBe(403);
-      }
+      await expect(discoverModels({ baseURL: 'https://api.example.com/v1', apiKey: 'sk-test' })).rejects.toMatchObject({
+        code: 'ACCESS_DENIED',
+        statusCode: 403,
+      });
     });
 
     it('throws ENDPOINT_NOT_FOUND on 404', async () => {
@@ -167,13 +163,10 @@ describe('model-discovery', () => {
 
       mockFetch({ error: 'Not Found' }, 404);
 
-      try {
-        await discoverModels({ baseURL: 'https://api.example.com/v1', apiKey: 'sk-test' });
-      } catch (error) {
-        expect(error.code).toBe('ENDPOINT_NOT_FOUND');
-        expect(error.statusCode).toBe(404);
-        expect(error.message).toContain('GET https://api.example.com/v1/models');
-      }
+      await expect(discoverModels({ baseURL: 'https://api.example.com/v1', apiKey: 'sk-test' })).rejects.toMatchObject({
+        code: 'ENDPOINT_NOT_FOUND',
+        statusCode: 404,
+      });
     });
 
     it('throws TIMEOUT on request timeout', async () => {
@@ -183,12 +176,10 @@ describe('model-discovery', () => {
       timeoutError.name = 'AbortError';
       mockFetchError(timeoutError);
 
-      try {
-        await discoverModels({ baseURL: 'https://api.example.com/v1', apiKey: 'sk-test' });
-      } catch (error) {
-        expect(error.code).toBe('TIMEOUT');
-        expect(error.statusCode).toBe(504);
-      }
+      await expect(discoverModels({ baseURL: 'https://api.example.com/v1', apiKey: 'sk-test' })).rejects.toMatchObject({
+        code: 'TIMEOUT',
+        statusCode: 504,
+      });
     });
 
     it('throws NETWORK_ERROR on connection failure', async () => {
@@ -196,12 +187,10 @@ describe('model-discovery', () => {
 
       mockFetchError(new Error('ENOTFOUND'));
 
-      try {
-        await discoverModels({ baseURL: 'https://api.example.com/v1', apiKey: 'sk-test' });
-      } catch (error) {
-        expect(error.code).toBe('NETWORK_ERROR');
-        expect(error.statusCode).toBe(502);
-      }
+      await expect(discoverModels({ baseURL: 'https://api.example.com/v1', apiKey: 'sk-test' })).rejects.toMatchObject({
+        code: 'NETWORK_ERROR',
+        statusCode: 502,
+      });
     });
 
     it('throws INVALID_RESPONSE for missing data array', async () => {
@@ -209,12 +198,10 @@ describe('model-discovery', () => {
 
       mockFetch({ models: [] });
 
-      try {
-        await discoverModels({ baseURL: 'https://api.example.com/v1', apiKey: 'sk-test' });
-      } catch (error) {
-        expect(error.code).toBe('INVALID_RESPONSE');
-        expect(error.statusCode).toBe(400);
-      }
+      await expect(discoverModels({ baseURL: 'https://api.example.com/v1', apiKey: 'sk-test' })).rejects.toMatchObject({
+        code: 'INVALID_RESPONSE',
+        statusCode: 400,
+      });
     });
 
     it('throws INVALID_RESPONSE for non-array data', async () => {
@@ -222,12 +209,10 @@ describe('model-discovery', () => {
 
       mockFetch({ data: 'not-an-array' });
 
-      try {
-        await discoverModels({ baseURL: 'https://api.example.com/v1', apiKey: 'sk-test' });
-      } catch (error) {
-        expect(error.code).toBe('INVALID_RESPONSE');
-        expect(error.statusCode).toBe(400);
-      }
+      await expect(discoverModels({ baseURL: 'https://api.example.com/v1', apiKey: 'sk-test' })).rejects.toMatchObject({
+        code: 'INVALID_RESPONSE',
+        statusCode: 400,
+      });
     });
 
     it('throws INVALID_RESPONSE for invalid JSON', async () => {
@@ -239,12 +224,10 @@ describe('model-discovery', () => {
         json: async () => { throw new Error('Invalid JSON'); },
       });
 
-      try {
-        await discoverModels({ baseURL: 'https://api.example.com/v1', apiKey: 'sk-test' });
-      } catch (error) {
-        expect(error.code).toBe('INVALID_RESPONSE');
-        expect(error.statusCode).toBe(400);
-      }
+      await expect(discoverModels({ baseURL: 'https://api.example.com/v1', apiKey: 'sk-test' })).rejects.toMatchObject({
+        code: 'INVALID_RESPONSE',
+        statusCode: 400,
+      });
     });
   });
 
@@ -252,96 +235,78 @@ describe('model-discovery', () => {
     it('rejects HTTP URLs', async () => {
       const { discoverModels, DiscoveryError } = await import('./model-discovery.js');
 
-      try {
-        await discoverModels({ baseURL: 'http://example.com/v1', apiKey: 'sk-test' });
-      } catch (error) {
-        expect(error.code).toBe('INVALID_URL');
-        expect(error.statusCode).toBe(400);
-      }
+      await expect(discoverModels({ baseURL: 'http://example.com/v1', apiKey: 'sk-test' })).rejects.toMatchObject({
+        code: 'INVALID_URL',
+        statusCode: 400,
+      });
     });
 
     it('rejects localhost', async () => {
       const { discoverModels, DiscoveryError } = await import('./model-discovery.js');
 
-      try {
-        await discoverModels({ baseURL: 'https://localhost:4000/v1', apiKey: 'sk-test' });
-      } catch (error) {
-        expect(error.code).toBe('SSRF_BLOCKED');
-        expect(error.statusCode).toBe(400);
-      }
+      await expect(discoverModels({ baseURL: 'https://localhost:4000/v1', apiKey: 'sk-test' })).rejects.toMatchObject({
+        code: 'SSRF_BLOCKED',
+        statusCode: 400,
+      });
     });
 
     it('rejects 127.0.0.1', async () => {
       const { discoverModels, DiscoveryError } = await import('./model-discovery.js');
 
-      try {
-        await discoverModels({ baseURL: 'https://127.0.0.1:4000/v1', apiKey: 'sk-test' });
-      } catch (error) {
-        expect(error.code).toBe('SSRF_BLOCKED');
-        expect(error.statusCode).toBe(400);
-      }
+      await expect(discoverModels({ baseURL: 'https://127.0.0.1:4000/v1', apiKey: 'sk-test' })).rejects.toMatchObject({
+        code: 'SSRF_BLOCKED',
+        statusCode: 400,
+      });
     });
 
     it('rejects 10.x.x.x private IPs', async () => {
       const { discoverModels, DiscoveryError } = await import('./model-discovery.js');
 
-      try {
-        await discoverModels({ baseURL: 'https://10.0.0.1/v1', apiKey: 'sk-test' });
-      } catch (error) {
-        expect(error.code).toBe('SSRF_BLOCKED');
-        expect(error.statusCode).toBe(400);
-      }
+      await expect(discoverModels({ baseURL: 'https://10.0.0.1/v1', apiKey: 'sk-test' })).rejects.toMatchObject({
+        code: 'SSRF_BLOCKED',
+        statusCode: 400,
+      });
     });
 
     it('rejects 172.16.x.x - 172.31.x.x private IPs', async () => {
       const { discoverModels, DiscoveryError } = await import('./model-discovery.js');
 
-      try {
-        await discoverModels({ baseURL: 'https://172.16.0.1/v1', apiKey: 'sk-test' });
-      } catch (error) {
-        expect(error.code).toBe('SSRF_BLOCKED');
-        expect(error.statusCode).toBe(400);
-      }
+      await expect(discoverModels({ baseURL: 'https://172.16.0.1/v1', apiKey: 'sk-test' })).rejects.toMatchObject({
+        code: 'SSRF_BLOCKED',
+        statusCode: 400,
+      });
 
-      try {
-        await discoverModels({ baseURL: 'https://172.31.255.255/v1', apiKey: 'sk-test' });
-      } catch (error) {
-        expect(error.code).toBe('SSRF_BLOCKED');
-        expect(error.statusCode).toBe(400);
-      }
+      await expect(discoverModels({ baseURL: 'https://172.31.255.255/v1', apiKey: 'sk-test' })).rejects.toMatchObject({
+        code: 'SSRF_BLOCKED',
+        statusCode: 400,
+      });
     });
 
     it('rejects 192.168.x.x private IPs', async () => {
       const { discoverModels, DiscoveryError } = await import('./model-discovery.js');
 
-      try {
-        await discoverModels({ baseURL: 'https://192.168.1.1/v1', apiKey: 'sk-test' });
-      } catch (error) {
-        expect(error.code).toBe('SSRF_BLOCKED');
-        expect(error.statusCode).toBe(400);
-      }
+      await expect(discoverModels({ baseURL: 'https://192.168.1.1/v1', apiKey: 'sk-test' })).rejects.toMatchObject({
+        code: 'SSRF_BLOCKED',
+        statusCode: 400,
+      });
     });
 
     it('rejects 169.254.x.x link-local', async () => {
       const { discoverModels, DiscoveryError } = await import('./model-discovery.js');
 
-      try {
-        await discoverModels({ baseURL: 'https://169.254.169.254/v1', apiKey: 'sk-test' });
-      } catch (error) {
-        expect(error.code).toBe('SSRF_BLOCKED');
-        expect(error.statusCode).toBe(400);
-      }
+      await expect(discoverModels({ baseURL: 'https://169.254.169.254/v1', apiKey: 'sk-test' })).rejects.toMatchObject({
+        code: 'SSRF_BLOCKED',
+        statusCode: 400,
+      });
     });
 
     it('rejects metadata endpoint 169.254.169.254', async () => {
       const { discoverModels, DiscoveryError } = await import('./model-discovery.js');
 
-      try {
-        await discoverModels({ baseURL: 'https://169.254.169.254/v1', apiKey: 'sk-test' });
-      } catch (error) {
-        expect(error.code).toBe('SSRF_BLOCKED');
-        expect(error.statusCode).toBe(400);
-      }
+      await expect(discoverModels({ baseURL: 'https://169.254.169.254/v1', apiKey: 'sk-test' })).rejects.toMatchObject({
+        code: 'SSRF_BLOCKED',
+        statusCode: 400,
+      });
     });
 
     it('allows valid public HTTPS URLs', async () => {
@@ -451,11 +416,10 @@ describe('model-discovery', () => {
         headers: { get: (name) => name.toLowerCase() === 'location' ? 'https://10.0.0.1/v1/models' : null },
       });
 
-      try {
-        await discoverModels({ baseURL: 'https://api.example.com/v1', apiKey: 'sk-test' });
-      } catch (error) {
-        expect(error.code).toBe('SSRF_BLOCKED');
-      }
+      await expect(discoverModels({ baseURL: 'https://api.example.com/v1', apiKey: 'sk-test' })).rejects.toMatchObject({
+        code: 'SSRF_BLOCKED',
+        statusCode: 400,
+      });
     });
   });
 });

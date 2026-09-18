@@ -1509,7 +1509,6 @@ export const settingsDict = {
   'settings.providers.page.auth.incomplete': 'Brak poświadczeń',
   'settings.providers.page.auth.incompleteHint': '· Dodaj klucz API lub {env:VAR} przed użyciem tego dostawcy w czacie',
 
-
   'settings.providers.page.auth.loadingMethods': 'Ładowanie metod uwierzytelniania...',
   'settings.providers.page.auth.oauthMethodFallback': 'Metoda OAuth {index}',
   'settings.providers.page.auth.pasteAuthorizationCodePlaceholder': 'Wklej kod autoryzacyjny',
@@ -1551,7 +1550,6 @@ export const settingsDict = {
   'settings.providers.page.custom.field.apiKey.editInfo': 'Pozostaw puste, aby zachować istniejące poświadczenie, albo wpisz nowy klucz / {env:VAR_NAME}.',
   'settings.providers.page.custom.field.apiKey.editPlaceholder': 'Pozostaw puste, aby zachować istniejący klucz',
 
-
   'settings.providers.page.custom.models.title': 'Modele',
   'settings.providers.page.custom.models.idLabel': 'ID modelu',
   'settings.providers.page.custom.models.idPlaceholder': 'gpt-4o',
@@ -1581,26 +1579,6 @@ export const settingsDict = {
   'settings.providers.page.custom.error.duplicate': 'Duplikat',
   'settings.providers.page.custom.error.apiKey.required': 'Wymagany jest klucz API lub {env:VAR_NAME}',
   'settings.providers.page.custom.authFailure.configAfterAuth': 'Poświadczenia zostały zapisane, ale konfiguracja dostawcy nie. Napraw błąd i spróbuj ponownie albo rozłącz, aby usunąć częściowy zapis.',
-
-  'settings.providers.page.custom.field.baseURL.fetchModels': 'Fetch Models',
-  'settings.providers.page.custom.field.baseURL.fetchingModels': 'Fetching models...',
-  'settings.providers.page.custom.field.baseURL.fetchModelsAria': 'Fetch available models from the provider',
-  'settings.providers.page.custom.models.selectorTitle': 'Select models to add',
-  'settings.providers.page.custom.models.selectorDescription': 'Choose which models to add to this provider. Models already in the list are pre-selected.',
-  'settings.providers.page.custom.models.selectAll': 'Select All',
-  'settings.providers.page.custom.models.clearAll': 'Clear All',
-  'settings.providers.page.custom.models.selectedCount': '{selected} of {total} models selected',
-  'settings.providers.page.custom.models.addSelected': 'Add selected models',
-  'settings.providers.page.custom.models.noModelsFound': 'No models found',
-  'settings.providers.page.custom.models.discoveryError.authFailed': 'Authentication failed. Please check your API key.',
-  'settings.providers.page.custom.models.discoveryError.accessDenied': 'Access denied by the provider.',
-  'settings.providers.page.custom.models.discoveryError.endpointNotFound': 'Model discovery endpoint was not found: GET {url}/models',
-  'settings.providers.page.custom.models.discoveryError.networkError': 'Unable to connect to the provider. Please check the Base URL and network connection.',
-  'settings.providers.page.custom.models.discoveryError.timeout': 'Request timed out. The provider did not respond in time.',
-  'settings.providers.page.custom.models.discoveryError.invalidResponse': 'The provider returned an unsupported model list format.',
-  'settings.providers.page.custom.models.discoveryError.providerError': 'Provider returned an error: {message}',
-  'settings.providers.page.custom.models.discoveryError.unknown': 'Failed to discover models. Please try again.',
-
 
   'settings.providers.page.connect.noProvidersFound': 'Nie znaleziono dostawców',
   'settings.providers.page.connect.providerField': 'Dostawca',

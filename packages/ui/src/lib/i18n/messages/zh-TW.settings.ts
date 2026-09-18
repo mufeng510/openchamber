@@ -1402,7 +1402,6 @@ export const settingsDict = {
   'settings.providers.page.custom.field.apiKey.editInfo': '留空以保留現有憑證，或輸入新金鑰 / {env:VAR_NAME}。',
   'settings.providers.page.custom.field.apiKey.editPlaceholder': '留空以保留現有金鑰',
 
-
   'settings.providers.page.custom.models.title': '模型',
   'settings.providers.page.custom.models.idLabel': '模型 ID',
   'settings.providers.page.custom.models.idPlaceholder': 'gpt-4o',
@@ -1433,26 +1432,6 @@ export const settingsDict = {
   'settings.providers.page.custom.error.apiKey.required': '需要 API 金鑰或 {env:VAR_NAME}',
   'settings.providers.page.custom.authFailure.configAfterAuth': '憑證已儲存，但提供者設定未儲存。請修正錯誤後再試，或中斷連線以清除部分儲存。',
 
-  'settings.providers.page.custom.field.baseURL.fetchModels': 'Fetch Models',
-  'settings.providers.page.custom.field.baseURL.fetchingModels': 'Fetching models...',
-  'settings.providers.page.custom.field.baseURL.fetchModelsAria': 'Fetch available models from the provider',
-  'settings.providers.page.custom.models.selectorTitle': 'Select models to add',
-  'settings.providers.page.custom.models.selectorDescription': 'Choose which models to add to this provider. Models already in the list are pre-selected.',
-  'settings.providers.page.custom.models.selectAll': 'Select All',
-  'settings.providers.page.custom.models.clearAll': 'Clear All',
-  'settings.providers.page.custom.models.selectedCount': '{selected} of {total} models selected',
-  'settings.providers.page.custom.models.addSelected': 'Add selected models',
-  'settings.providers.page.custom.models.noModelsFound': 'No models found',
-  'settings.providers.page.custom.models.discoveryError.authFailed': 'Authentication failed. Please check your API key.',
-  'settings.providers.page.custom.models.discoveryError.accessDenied': 'Access denied by the provider.',
-  'settings.providers.page.custom.models.discoveryError.endpointNotFound': 'Model discovery endpoint was not found: GET {url}/models',
-  'settings.providers.page.custom.models.discoveryError.networkError': 'Unable to connect to the provider. Please check the Base URL and network connection.',
-  'settings.providers.page.custom.models.discoveryError.timeout': 'Request timed out. The provider did not respond in time.',
-  'settings.providers.page.custom.models.discoveryError.invalidResponse': 'The provider returned an unsupported model list format.',
-  'settings.providers.page.custom.models.discoveryError.providerError': 'Provider returned an error: {message}',
-  'settings.providers.page.custom.models.discoveryError.unknown': 'Failed to discover models. Please try again.',
-
-
   'settings.providers.page.auth.title': '驗證',
   'settings.providers.page.auth.loadingMethods': '正在載入驗證方式...',
   'settings.providers.page.auth.apiKeyLabel': 'API Key',
@@ -1474,7 +1453,6 @@ export const settingsDict = {
   'settings.providers.page.auth.connected': '已連線',
   'settings.providers.page.auth.incomplete': '缺少憑證',
   'settings.providers.page.auth.incompleteHint': '· 在聊天中使用此提供者之前，請新增 API 金鑰或 {env:VAR}',
-
 
   'settings.providers.page.auth.useReconnectHint': '· 使用「重新連線」以更新憑證',
   'settings.providers.page.connectionDetails.title': '連線詳情',

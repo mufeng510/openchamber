@@ -1495,7 +1495,6 @@ export const settingsDict = {
   "settings.providers.page.custom.field.apiKey.editInfo": "Deixe em branco para manter a credencial existente, ou informe uma nova chave / {env:VAR_NAME}.",
   "settings.providers.page.custom.field.apiKey.editPlaceholder": "Deixe em branco para manter a chave existente",
 
-
   "settings.providers.page.custom.models.title": "Modelos",
   "settings.providers.page.custom.models.idLabel": "ID do modelo",
   "settings.providers.page.custom.models.idPlaceholder": "gpt-4o",
@@ -1526,26 +1525,6 @@ export const settingsDict = {
   "settings.providers.page.custom.error.apiKey.required": "É necessária uma chave de API ou {env:VAR_NAME}",
   "settings.providers.page.custom.authFailure.configAfterAuth": "As credenciais foram salvas, mas a configuração do provedor não. Corrija o erro e tente novamente, ou desconecte para limpar o salvamento parcial.",
 
-  'settings.providers.page.custom.field.baseURL.fetchModels': 'Fetch Models',
-  'settings.providers.page.custom.field.baseURL.fetchingModels': 'Fetching models...',
-  'settings.providers.page.custom.field.baseURL.fetchModelsAria': 'Fetch available models from the provider',
-  'settings.providers.page.custom.models.selectorTitle': 'Select models to add',
-  'settings.providers.page.custom.models.selectorDescription': 'Choose which models to add to this provider. Models already in the list are pre-selected.',
-  'settings.providers.page.custom.models.selectAll': 'Select All',
-  'settings.providers.page.custom.models.clearAll': 'Clear All',
-  'settings.providers.page.custom.models.selectedCount': '{selected} of {total} models selected',
-  'settings.providers.page.custom.models.addSelected': 'Add selected models',
-  'settings.providers.page.custom.models.noModelsFound': 'No models found',
-  'settings.providers.page.custom.models.discoveryError.authFailed': 'Authentication failed. Please check your API key.',
-  'settings.providers.page.custom.models.discoveryError.accessDenied': 'Access denied by the provider.',
-  'settings.providers.page.custom.models.discoveryError.endpointNotFound': 'Model discovery endpoint was not found: GET {url}/models',
-  'settings.providers.page.custom.models.discoveryError.networkError': 'Unable to connect to the provider. Please check the Base URL and network connection.',
-  'settings.providers.page.custom.models.discoveryError.timeout': 'Request timed out. The provider did not respond in time.',
-  'settings.providers.page.custom.models.discoveryError.invalidResponse': 'The provider returned an unsupported model list format.',
-  'settings.providers.page.custom.models.discoveryError.providerError': 'Provider returned an error: {message}',
-  'settings.providers.page.custom.models.discoveryError.unknown': 'Failed to discover models. Please try again.',
-
-
   "settings.providers.page.auth.title": "Autenticação",
   "settings.providers.page.auth.loadingMethods": "Carregando métodos de autenticação...",
   "settings.providers.page.auth.apiKeyLabel": "Chave API",
@@ -1567,7 +1546,6 @@ export const settingsDict = {
   "settings.providers.page.auth.connected": "Conectado",
   "settings.providers.page.auth.incomplete": "Credenciais ausentes",
   "settings.providers.page.auth.incompleteHint": "· Adicione uma chave de API ou {env:VAR} antes de usar este provedor no chat",
-
 
   "settings.providers.page.auth.useReconnectHint": "· Usar Reconnect para atualizar credenciais",
   "settings.providers.page.connectionDetails.title": "Detalhes de conexão",

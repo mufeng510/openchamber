@@ -403,3 +403,79 @@ describe('model discovery types', () => {
     expect(codes).toHaveLength(10);
   });
 });
+
+describe('model selection merge logic', () => {
+  test('adds selected models to form while preserving existing', () => {
+    const existingModels = [
+      { row: 'm0', id: 'model-a', name: 'Model A' },
+      { row: 'm1', id: 'model-b', name: 'Model B' },
+    ];
+    const selectedModels = [
+      { id: 'model-b', name: 'Model B', alreadyExists: true, selected: true },
+      { id: 'model-c', name: 'Model C', alreadyExists: false, selected: true },
+      { id: 'model-d', name: 'Model D', alreadyExists: false, selected: false },
+    ];
+
+    const existingIds = new Set(existingModels.map((m) => m.id.trim()).filter(Boolean));
+    const newModels = selectedModels
+      .filter((m) => m.selected && !existingIds.has(m.id))
+      .map((m) => ({ row: 'new-row', id: m.id, name: m.name }));
+
+    expect(newModels).toHaveLength(1);
+    expect(newModels[0]).toEqual({ row: 'new-row', id: 'model-c', name: 'Model C' });
+
+    const merged = [...existingModels, ...newModels];
+    expect(merged).toHaveLength(3);
+    expect(merged.map((m) => m.id)).toEqual(['model-a', 'model-b', 'model-c']);
+  });
+
+  test('does not add unselected models', () => {
+    const existingModels = [{ row: 'm0', id: 'model-a', name: 'Model A' }];
+    const selectedModels = [
+      { id: 'model-b', name: 'Model B', alreadyExists: false, selected: false },
+    ];
+
+    const existingIds = new Set(existingModels.map((m) => m.id.trim()).filter(Boolean));
+    const newModels = selectedModels
+      .filter((m) => m.selected && !existingIds.has(m.id))
+      .map((m) => ({ row: 'new-row', id: m.id, name: m.name }));
+
+    expect(newModels).toHaveLength(0);
+  });
+
+  test('preserves existing models when all selected already exist', () => {
+    const existingModels = [
+      { row: 'm0', id: 'model-a', name: 'Model A' },
+      { row: 'm1', id: 'model-b', name: 'Model B' },
+    ];
+    const selectedModels = [
+      { id: 'model-a', name: 'Model A', alreadyExists: true, selected: true },
+      { id: 'model-b', name: 'Model B', alreadyExists: true, selected: true },
+    ];
+
+    const existingIds = new Set(existingModels.map((m) => m.id.trim()).filter(Boolean));
+    const newModels = selectedModels
+      .filter((m) => m.selected && !existingIds.has(m.id))
+      .map((m) => ({ row: 'new-row', id: m.id, name: m.name }));
+
+    expect(newModels).toHaveLength(0);
+  });
+
+  test('handles model IDs with special characters', () => {
+    const existingModels = [{ row: 'm0', id: 'model-a', name: 'Model A' }];
+    const selectedModels = [
+      { id: 'moonshotai/kimi-k3', name: 'Kimi K3', alreadyExists: false, selected: true },
+      { id: 'model:v2', name: 'Model V2', alreadyExists: false, selected: true },
+      { id: 'foo.bar', name: 'Foo Bar', alreadyExists: false, selected: true },
+      { id: 'foo-bar', name: 'Foo Bar', alreadyExists: false, selected: true },
+    ];
+
+    const existingIds = new Set(existingModels.map((m) => m.id.trim()).filter(Boolean));
+    const newModels = selectedModels
+      .filter((m) => m.selected && !existingIds.has(m.id))
+      .map((m) => ({ row: 'new-row', id: m.id, name: m.name }));
+
+    expect(newModels).toHaveLength(4);
+    expect(newModels.map((m) => m.id)).toEqual(['moonshotai/kimi-k3', 'model:v2', 'foo.bar', 'foo-bar']);
+  });
+});

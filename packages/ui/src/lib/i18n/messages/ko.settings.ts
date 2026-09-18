@@ -1495,7 +1495,6 @@ export const settingsDict = {
   'settings.providers.page.custom.field.apiKey.editInfo': '비워 두면 기존 자격 증명을 유지합니다. 새 키 또는 {env:VAR_NAME}을(를) 입력할 수도 있습니다.',
   'settings.providers.page.custom.field.apiKey.editPlaceholder': '비워 두면 기존 키 유지',
 
-
   'settings.providers.page.custom.models.title': '모델',
   'settings.providers.page.custom.models.idLabel': '모델 ID',
   'settings.providers.page.custom.models.idPlaceholder': 'gpt-4o',
@@ -1526,26 +1525,6 @@ export const settingsDict = {
   'settings.providers.page.custom.error.apiKey.required': 'API 키 또는 {env:VAR_NAME}이(가) 필요합니다',
   'settings.providers.page.custom.authFailure.configAfterAuth': '자격 증명은 저장되었지만 공급자 구성은 저장되지 않았습니다. 오류를 수정한 뒤 다시 시도하거나, 연결을 해제하여 부분 저장을 지우세요.',
 
-  'settings.providers.page.custom.field.baseURL.fetchModels': 'Fetch Models',
-  'settings.providers.page.custom.field.baseURL.fetchingModels': 'Fetching models...',
-  'settings.providers.page.custom.field.baseURL.fetchModelsAria': 'Fetch available models from the provider',
-  'settings.providers.page.custom.models.selectorTitle': 'Select models to add',
-  'settings.providers.page.custom.models.selectorDescription': 'Choose which models to add to this provider. Models already in the list are pre-selected.',
-  'settings.providers.page.custom.models.selectAll': 'Select All',
-  'settings.providers.page.custom.models.clearAll': 'Clear All',
-  'settings.providers.page.custom.models.selectedCount': '{selected} of {total} models selected',
-  'settings.providers.page.custom.models.addSelected': 'Add selected models',
-  'settings.providers.page.custom.models.noModelsFound': 'No models found',
-  'settings.providers.page.custom.models.discoveryError.authFailed': 'Authentication failed. Please check your API key.',
-  'settings.providers.page.custom.models.discoveryError.accessDenied': 'Access denied by the provider.',
-  'settings.providers.page.custom.models.discoveryError.endpointNotFound': 'Model discovery endpoint was not found: GET {url}/models',
-  'settings.providers.page.custom.models.discoveryError.networkError': 'Unable to connect to the provider. Please check the Base URL and network connection.',
-  'settings.providers.page.custom.models.discoveryError.timeout': 'Request timed out. The provider did not respond in time.',
-  'settings.providers.page.custom.models.discoveryError.invalidResponse': 'The provider returned an unsupported model list format.',
-  'settings.providers.page.custom.models.discoveryError.providerError': 'Provider returned an error: {message}',
-  'settings.providers.page.custom.models.discoveryError.unknown': 'Failed to discover models. Please try again.',
-
-
   'settings.providers.page.auth.title': '인증',
   'settings.providers.page.auth.loadingMethods': '인증 방식 로딩 중...',
   'settings.providers.page.auth.apiKeyLabel': 'API Key',
@@ -1567,7 +1546,6 @@ export const settingsDict = {
   'settings.providers.page.auth.connected': '연결됨',
   'settings.providers.page.auth.incomplete': '자격 증명 없음',
   'settings.providers.page.auth.incompleteHint': '· 채팅에서 이 공급자를 사용하기 전에 API 키 또는 {env:VAR}을(를) 추가하세요',
-
 
   'settings.providers.page.auth.useReconnectHint': '· 인증 정보를 업데이트하려면 Reconnect를 사용하세요',
   'settings.providers.page.connectionDetails.title': '연결 세부 정보',

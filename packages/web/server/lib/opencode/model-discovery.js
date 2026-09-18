@@ -112,9 +112,20 @@ function buildAuthHeaders({ apiKey, env, headers }) {
     Object.assign(authHeaders, headers);
   }
 
-  // API key takes precedence over env (env is resolved server-side by OpenCode)
+  // API key takes precedence; if not provided, try to resolve from env var
+  let resolvedApiKey = '';
   if (apiKey && typeof apiKey === 'string' && apiKey.trim()) {
-    authHeaders['Authorization'] = `Bearer ${apiKey.trim()}`;
+    resolvedApiKey = apiKey.trim();
+  } else if (env && typeof env === 'string' && env.trim()) {
+    // Resolve environment variable server-side
+    const envValue = process.env[env.trim()];
+    if (envValue && typeof envValue === 'string' && envValue.trim()) {
+      resolvedApiKey = envValue.trim();
+    }
+  }
+
+  if (resolvedApiKey) {
+    authHeaders['Authorization'] = `Bearer ${resolvedApiKey}`;
   }
 
   return authHeaders;

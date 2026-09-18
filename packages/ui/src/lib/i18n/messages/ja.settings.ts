@@ -1528,7 +1528,6 @@ export const settingsDict = {
   'settings.providers.page.custom.field.apiKey.editInfo': '空のままにすると既存の認証情報を保持します。新しいキーまたは {env:VAR_NAME} を入力することもできます。',
   'settings.providers.page.custom.field.apiKey.editPlaceholder': '空のままにすると既存のキーを保持',
 
-
   'settings.providers.page.custom.models.title': 'モデル',
   'settings.providers.page.custom.models.idLabel': 'モデル ID',
   'settings.providers.page.custom.models.idPlaceholder': 'gpt-4o',
@@ -1559,26 +1558,6 @@ export const settingsDict = {
   'settings.providers.page.custom.error.apiKey.required': 'API キーまたは {env:VAR_NAME} が必要です',
   'settings.providers.page.custom.authFailure.configAfterAuth': '認証情報は保存されましたが、プロバイダー設定は保存されませんでした。エラーを修正して再試行するか、切断して不完全な保存を削除してください。',
 
-  'settings.providers.page.custom.field.baseURL.fetchModels': 'Fetch Models',
-  'settings.providers.page.custom.field.baseURL.fetchingModels': 'Fetching models...',
-  'settings.providers.page.custom.field.baseURL.fetchModelsAria': 'Fetch available models from the provider',
-  'settings.providers.page.custom.models.selectorTitle': 'Select models to add',
-  'settings.providers.page.custom.models.selectorDescription': 'Choose which models to add to this provider. Models already in the list are pre-selected.',
-  'settings.providers.page.custom.models.selectAll': 'Select All',
-  'settings.providers.page.custom.models.clearAll': 'Clear All',
-  'settings.providers.page.custom.models.selectedCount': '{selected} of {total} models selected',
-  'settings.providers.page.custom.models.addSelected': 'Add selected models',
-  'settings.providers.page.custom.models.noModelsFound': 'No models found',
-  'settings.providers.page.custom.models.discoveryError.authFailed': 'Authentication failed. Please check your API key.',
-  'settings.providers.page.custom.models.discoveryError.accessDenied': 'Access denied by the provider.',
-  'settings.providers.page.custom.models.discoveryError.endpointNotFound': 'Model discovery endpoint was not found: GET {url}/models',
-  'settings.providers.page.custom.models.discoveryError.networkError': 'Unable to connect to the provider. Please check the Base URL and network connection.',
-  'settings.providers.page.custom.models.discoveryError.timeout': 'Request timed out. The provider did not respond in time.',
-  'settings.providers.page.custom.models.discoveryError.invalidResponse': 'The provider returned an unsupported model list format.',
-  'settings.providers.page.custom.models.discoveryError.providerError': 'Provider returned an error: {message}',
-  'settings.providers.page.custom.models.discoveryError.unknown': 'Failed to discover models. Please try again.',
-
-
   'settings.providers.page.auth.title': '認証',
   'settings.providers.page.auth.loadingMethods': '認証方法を読み込み中...',
   'settings.providers.page.auth.apiKeyLabel': 'API キー',
@@ -1600,7 +1579,6 @@ export const settingsDict = {
   'settings.providers.page.auth.connected': '接続済み',
   'settings.providers.page.auth.incomplete': '認証情報が不足しています',
   'settings.providers.page.auth.incompleteHint': '· チャットでこのプロバイダーを使う前に API キーまたは {env:VAR} を追加してください',
-
 
   'settings.providers.page.auth.useReconnectHint': '· 認証情報を更新するには再接続を使用',
   'settings.providers.page.connectionDetails.title': '接続詳細',

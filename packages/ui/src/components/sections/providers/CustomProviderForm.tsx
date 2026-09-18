@@ -135,6 +135,7 @@ export const CustomProviderForm: React.FC<CustomProviderFormProps> = ({
     const baseURL = form.baseURL.trim();
     if (!baseURL) {
       setDiscoveryError(t('settings.providers.page.custom.error.baseURL.required'));
+      setShowModelSelector(true);
       return;
     }
 
@@ -179,6 +180,7 @@ export const CustomProviderForm: React.FC<CustomProviderFormProps> = ({
         }
 
         setDiscoveryError(message);
+        setShowModelSelector(true);
         return;
       }
 
@@ -196,6 +198,7 @@ export const CustomProviderForm: React.FC<CustomProviderFormProps> = ({
       setShowModelSelector(true);
     } catch {
       setDiscoveryError(t(DISCOVERY_ERROR_MESSAGES.INTERNAL_ERROR));
+      setShowModelSelector(true);
     } finally {
       setDiscoveryLoading(false);
     }
@@ -375,6 +378,7 @@ export const CustomProviderForm: React.FC<CustomProviderFormProps> = ({
             </Button>
           </div>
           {err.baseURL ? <p className="mt-1 typography-meta text-[var(--status-error)]">{err.baseURL}</p> : null}
+          {discoveryError ? <p className="mt-1 typography-meta text-[var(--status-error)]">{discoveryError}</p> : null}
         </SettingsStackedField>
 
         <SettingsStackedField
@@ -638,7 +642,7 @@ export const CustomProviderForm: React.FC<CustomProviderFormProps> = ({
                       </div>
                       {model.alreadyExists && (
                         <span className="typography-micro text-muted-foreground flex-shrink-0">
-                          {t('settings.providers.page.custom.models.nameLabel')} (existing)
+                          {t('settings.providers.page.custom.models.nameLabel')} {t('settings.providers.page.custom.models.existingBadge')}
                         </span>
                       )}
                     </label>

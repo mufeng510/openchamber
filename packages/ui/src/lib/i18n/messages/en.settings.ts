@@ -1571,6 +1571,7 @@ export const settingsDict = {
   'settings.providers.page.custom.models.discoveryError.invalidResponse': 'The provider returned an unsupported model list format.',
   'settings.providers.page.custom.models.discoveryError.providerError': 'Provider returned an error: {message}',
   'settings.providers.page.custom.models.discoveryError.unknown': 'Failed to discover models. Please try again.',
+  'settings.providers.page.custom.models.existingBadge': '(existing)',
   'settings.providers.page.auth.title': 'Authentication',
   'settings.providers.page.auth.loadingMethods': 'Loading authentication methods...',
   'settings.providers.page.auth.apiKeyLabel': 'API Key',
