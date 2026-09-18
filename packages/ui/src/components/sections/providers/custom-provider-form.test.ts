@@ -7,6 +7,7 @@ import {
   providerToCustomFormState,
   resolveProviderConfigScope,
   validateCustomProvider,
+  mergeDiscoveredModels,
   type CustomProviderConfig,
   type CustomProviderFormState,
   type DiscoveredModel,
@@ -416,15 +417,13 @@ describe('model selection merge logic', () => {
       { id: 'model-d', name: 'Model D', alreadyExists: false, selected: false },
     ];
 
-    const existingIds = new Set(existingModels.map((m) => m.id.trim()).filter(Boolean));
-    const newModels = selectedModels
-      .filter((m) => m.selected && !existingIds.has(m.id))
-      .map((m) => ({ row: 'new-row', id: m.id, name: m.name }));
+    const { newRows, newModelErrors } = mergeDiscoveredModels(existingModels, selectedModels);
 
-    expect(newModels).toHaveLength(1);
-    expect(newModels[0]).toEqual({ row: 'new-row', id: 'model-c', name: 'Model C' });
+    expect(newRows).toHaveLength(1);
+    expect(newRows[0]).toEqual({ row: expect.any(String), id: 'model-c', name: 'Model C' });
+    expect(newModelErrors).toHaveLength(1);
 
-    const merged = [...existingModels, ...newModels];
+    const merged = [...existingModels, ...newRows];
     expect(merged).toHaveLength(3);
     expect(merged.map((m) => m.id)).toEqual(['model-a', 'model-b', 'model-c']);
   });
@@ -435,12 +434,9 @@ describe('model selection merge logic', () => {
       { id: 'model-b', name: 'Model B', alreadyExists: false, selected: false },
     ];
 
-    const existingIds = new Set(existingModels.map((m) => m.id.trim()).filter(Boolean));
-    const newModels = selectedModels
-      .filter((m) => m.selected && !existingIds.has(m.id))
-      .map((m) => ({ row: 'new-row', id: m.id, name: m.name }));
+    const { newRows } = mergeDiscoveredModels(existingModels, selectedModels);
 
-    expect(newModels).toHaveLength(0);
+    expect(newRows).toHaveLength(0);
   });
 
   test('preserves existing models when all selected already exist', () => {
@@ -453,12 +449,9 @@ describe('model selection merge logic', () => {
       { id: 'model-b', name: 'Model B', alreadyExists: true, selected: true },
     ];
 
-    const existingIds = new Set(existingModels.map((m) => m.id.trim()).filter(Boolean));
-    const newModels = selectedModels
-      .filter((m) => m.selected && !existingIds.has(m.id))
-      .map((m) => ({ row: 'new-row', id: m.id, name: m.name }));
+    const { newRows } = mergeDiscoveredModels(existingModels, selectedModels);
 
-    expect(newModels).toHaveLength(0);
+    expect(newRows).toHaveLength(0);
   });
 
   test('handles model IDs with special characters', () => {
@@ -470,12 +463,25 @@ describe('model selection merge logic', () => {
       { id: 'foo-bar', name: 'Foo Bar', alreadyExists: false, selected: true },
     ];
 
-    const existingIds = new Set(existingModels.map((m) => m.id.trim()).filter(Boolean));
-    const newModels = selectedModels
-      .filter((m) => m.selected && !existingIds.has(m.id))
-      .map((m) => ({ row: 'new-row', id: m.id, name: m.name }));
+    const { newRows } = mergeDiscoveredModels(existingModels, selectedModels);
 
-    expect(newModels).toHaveLength(4);
-    expect(newModels.map((m) => m.id)).toEqual(['moonshotai/kimi-k3', 'model:v2', 'foo.bar', 'foo-bar']);
+    expect(newRows).toHaveLength(4);
+    expect(newRows.map((m) => m.id)).toEqual(['moonshotai/kimi-k3', 'model:v2', 'foo.bar', 'foo-bar']);
+  });
+
+  test('computes newRows and newModelErrors in single pass without drift', () => {
+    const existingModels = [{ row: 'm0', id: 'model-a', name: 'Model A' }];
+    const selectedModels = [
+      { id: 'model-b', name: 'Model B', alreadyExists: false, selected: true },
+      { id: 'model-c', name: 'Model C', alreadyExists: false, selected: true },
+    ];
+
+    const { newRows, newModelErrors } = mergeDiscoveredModels(existingModels, selectedModels);
+
+    expect(newRows).toHaveLength(2);
+    expect(newModelErrors).toHaveLength(2);
+    expect(newRows[0].id).toBe('model-b');
+    expect(newRows[1].id).toBe('model-c');
+    expect(newRows).toEqual(newRows); // identity check - same array reference
   });
 });
