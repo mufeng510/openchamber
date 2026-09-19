@@ -315,12 +315,16 @@ export async function discoverModels({ baseURL, apiKey, env, headers }) {
   let currentURL = modelsURL;
 
   while (redirectCount <= MAX_REDIRECTS) {
+    // Build headers for this request - strip auth headers on cross-origin redirects
+    const currentHost = new URL(currentURL).host;
+    const requestHeaders = {
+      'Accept': 'application/json',
+      ...authHeaders,
+    };
+
     response = await fetchWithTimeout(currentURL, {
       method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        ...authHeaders,
-      },
+      headers: requestHeaders,
     }, DISCOVERY_TIMEOUT_MS);
 
     // Handle redirects manually to re-validate URL
@@ -333,6 +337,13 @@ export async function discoverModels({ baseURL, apiKey, env, headers }) {
         const redirectURL = new URL(location, currentURL);
         // Re-validate redirect target
         await validateBaseURL(redirectURL.toString());
+        
+        // Strip auth headers on cross-origin redirects
+        const redirectHost = redirectURL.host;
+        if (redirectHost !== currentHost) {
+          delete authHeaders['Authorization'];
+        }
+        
         currentURL = redirectURL.toString();
         redirectCount++;
         continue;
