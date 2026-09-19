@@ -130,11 +130,6 @@ async function resolveAndValidateHostname(hostname) {
     return true;
   }
 
-  // For domain names, skip DNS resolution in test environment
-  if (process.env.NODE_ENV === 'test' || process.env.VITEST === 'true') {
-    return true;
-  }
-
   // For domain names, resolve and validate all resolved IPs
   try {
     const { promises: dns } = await import('node:dns');

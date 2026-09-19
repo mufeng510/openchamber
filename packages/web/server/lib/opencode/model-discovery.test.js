@@ -2,16 +2,29 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const originalFetch = globalThis.fetch;
 
+const mockDnsLookup = vi.fn();
+
+vi.mock('node:dns', () => ({
+  promises: {
+    lookup: mockDnsLookup,
+  },
+}));
+
 describe('model-discovery', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     globalThis.fetch = vi.fn();
+    mockDnsLookup.mockReset().mockResolvedValue([
+      { address: '93.184.216.34', family: 4 }, // example.com public IP
+    ]);
   });
 
   afterEach(() => {
     vi.useRealTimers();
     globalThis.fetch = originalFetch;
   });
+
+  const originalFetch = globalThis.fetch;
 
   const mockFetch = (response, status = 200, headers = {}) => {
     globalThis.fetch.mockResolvedValue({
